@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Plate Facts — Macro Logger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --paper:#ffffff;
+    --ink:#15130d;
+    --muted:#6b6558;
+    --line:#e6e1d6;
+    --cal:#c1401c;
+    --protein:#2f6b3a;
+    --carb:#b8860b;
+    --fat:#3b5b92;
+    --bg:#efece4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    max-width:460px;
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--paper);
+    box-shadow:0 0 40px rgba(0,0,0,0.06);
+    padding:28px 20px 60px;
+  }
+  header{
+    text-align:center;
+    margin-bottom:22px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  h1{
+    font-family:'Archivo Black',sans-serif;
+    font-size:30px;
+    letter-spacing:-0.01em;
+    margin:0;
+    line-height:1;
+  }
+  .subhead{
+    font-size:13px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+
+  /* Capture area */
+  .capture-box{
+    border:3px solid var(--ink);
+    border-radius:2px;
+    padding:16px;
+    margin-bottom:18px;
+  }
+  .capture-empty{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+    padding:30px 10px;
+    text-align:center;
+  }
+  .capture-empty p{
+    margin:0;
+    color:var(--muted);
+    font-size:13px;
+    max-width:260px;
+  }
+  .btn-row{
+    display:flex;
+    gap:10px;
+    width:100%;
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    border:none;
+    cursor:pointer;
+    border-radius:2px;
+    padding:12px 16px;
+    transition:transform .05s ease, opacity .15s ease;
+  }
+  button:active{transform:scale(0.98);}
+  button:disabled{opacity:0.45;cursor:default;}
+  .btn-primary{
+    background:var(--ink);
+    color:var(--paper);
+    flex:1;
+  }
+  .btn-secondary{
+    background:var(--paper);
+    color:var(--ink);
+    border:2px solid var(--ink);
+    flex:1;
+  }
+  .btn-full{width:100%;}
+  input[type=file]{display:none;}
+
+  .preview-wrap{position:relative;}
+  .preview-wrap img{
+    width:100%;
+    display:block;
+    border-radius:2px;
+    max-height:320px;
+    object-fit:cover;
+  }
+  .retake{
+    position:absolute;
+    top:8px;right:8px;
+    background:rgba(21,19,13,0.75);
+    color:#fff;
+    font-size:11px;
+    font-family:'IBM Plex Mono',monospace;
+    padding:6px 10px;
+    border-radius:2px;
+    letter-spacing:0.05em;
+  }
+  .estimate-row{margin-top:12px;}
+
+  .status-line{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    text-align:center;
+    margin:10px 0 2px;
+    min-height:16px;
+  }
+  .status-line.err{color:var(--cal);}
+
+  /* Nutrition Facts panel */
+  .facts{
+    border:4px solid var(--ink);
+    padding:10px 14px 14px;
+    margin-top:20px;
+  }
+  .facts-title{
+    font-family:'Archivo Black',sans-serif;
+    font-size:26px;
+    line-height:1;
+    padding-bottom:6px;
+  }
+  .facts input.food-name{
+    font-family:'Archivo Black',sans-serif;
+    font-size:26px;
+    line-height:1;
+    border:none;
+    width:100%;
+    padding:0 0 6px;
+    background:transparent;
+    color:var(--ink);
+  }
+  .facts input.serving{
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    color:var(--muted);
+    border:none;
+    width:100%;
+    background:transparent;
+    padding-bottom:6px;
+  }
+  .rule-thick{border-top:8px solid var(--ink);margin:2px 0 6px;}
+  .rule-med{border-top:4px solid var(--ink);margin:6px 0;}
+  .rule-thin{border-top:1px solid var(--line);margin:8px 0;}
+
+  .cal-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:4px 0 8px;
+  }
+  .cal-row .label{
+    font-family:'Archivo Black',sans-serif;
+    font-size:17px;
+  }
+  .cal-row .value{
+    display:flex;
+    align-items:baseline;
+    gap:4px;
+  }
+  .cal-row input{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:26px;
+    border:none;
+    background:transparent;
+    width:90px;
+    text-align:right;
+    color:var(--cal);
+  }
+  .macro-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:7px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .macro-row:last-of-type{border-bottom:none;}
+  .macro-label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    font-weight:600;
+  }
+  .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .dot.protein{background:var(--protein);}
+  .dot.carb{background:var(--carb);}
+  .dot.fat{background:var(--fat);}
+  .macro-row input{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:15px;
+    border:none;
+    background:transparent;
+    width:60px;
+    text-align:right;
+  }
+  .unit{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-left:2px;}
+
+  .notes{
+    font-size:11px;
+    color:var(--muted);
+    font-style:italic;
+    margin-top:10px;
+    line-height:1.4;
+  }
+
+  .save-row{margin-top:16px;display:flex;gap:10px;}
+
+  /* History */
+  .history{margin-top:36px;}
+  .history h2{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+    border-bottom:2px solid var(--ink);
+    padding-bottom:6px;
+    margin-bottom:10px;
+  }
+  .log-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .log-item .name{font-weight:600;}
+  .log-item .meta{color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;}
+  .log-item .macros{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    text-align:right;
+  }
+  .empty-hist{color:var(--muted);font-size:13px;padding:14px 0;text-align:center;}
+
+  .config-warning{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    background:#fff6ea;
+    border:1px solid var(--carb);
+    color:#5c4108;
+    padding:10px 12px;
+    border-radius:2px;
+    margin-bottom:18px;
+    line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <header>
+    <div class="eyebrow">Estimated Nutrition</div>
+    <h1>PLATE FACTS</h1>
+    <div class="subhead">Photograph a plate. Adjust the estimate. Log it.</div>
+  </header>
+
+  <div id="configWarning"></div>
+
+  <div class="capture-box" id="captureBox">
+    <div class="capture-empty" id="captureEmpty">
+      <p>Take a photo of your plate, or upload one, to get a macro estimate.</p>
+      <div class="btn-row">
+        <button class="btn-secondary" id="cameraBtn">Take Photo</button>
+        <button class="btn-secondary" id="uploadBtn">Upload</button>
+      </div>
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" />
+      <input type="file" id="uploadInput" accept="image/*" />
+    </div>
+    <div class="preview-wrap" id="previewWrap" style="display:none;">
+      <img id="previewImg" alt="Plate preview" />
+      <div class="retake" id="retakeBtn">RETAKE</div>
+    </div>
+    <div class="estimate-row" id="estimateRow" style="display:none;">
+      <button class="btn-primary btn-full" id="estimateBtn">Estimate Macros</button>
+    </div>
+  </div>
+
+  <div class="status-line" id="statusLine"></div>
+
+  <div id="factsPanel"></div>
+
+  <div class="history">
+    <h2>Recent Plates</h2>
+    <div id="historyList"><div class="empty-hist">No entries yet.</div></div>
+  </div>
+
+</div>
+
+<script>
+/* ====================== CONFIGURE THIS ======================
+   1. Create a new Supabase project.
+   2. Run the SQL from the setup instructions to create the
+      `plate_logs` table (see chat for the SQL + RLS policy).
+   3. Paste your project URL and anon public key below.
+================================================================ */
+const SUPABASE_URL = "https://ljyyfbhsybxblqgfxhos.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxqeXlmYmhzeWJ4YmxxZ2Z4aG9zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MzkzMTUsImV4cCI6MjEwMDQxNTMxNX0.BeRCarJOStEFMqjCN77mLLEA6zz0TOvxJCq7TSA6Oxk";
+/* ============================================================== */
+
+const isConfigured = !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
+let supabase = null;
+if (isConfigured) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} else {
+  document.getElementById("configWarning").innerHTML =
+    '<div class="config-warning">⚠ Supabase isn\'t configured yet. Open this file and set SUPABASE_URL / SUPABASE_ANON_KEY at the top of the &lt;script&gt; tag. Estimating still works — saving and history won\'t until it\'s set.</div>';
+}
+
+const state = {
+  file: null,
+  base64: null,
+  mediaType: null,
+  estimate: null, // {food_name, serving_description, calories, protein_g, carbs_g, fat_g, confidence_note}
+};
+
+const el = (id) => document.getElementById(id);
+const statusLine = el("statusLine");
+const setStatus = (msg, isErr=false) => {
+  statusLine.textContent = msg || "";
+  statusLine.classList.toggle("err", !!isErr);
+};
+
+// ---- Capture wiring ----
+el("cameraBtn").addEventListener("click", () => el("cameraInput").click());
+el("uploadBtn").addEventListener("click", () => el("uploadInput").click());
+el("cameraInput").addEventListener("change", (e) => handleFile(e.target.files[0]));
+el("uploadInput").addEventListener("change", (e) => handleFile(e.target.files[0]));
+el("retakeBtn").addEventListener("click", resetCapture);
+
+function resetCapture(){
+  state.file = null; state.base64 = null; state.mediaType = null; state.estimate = null;
+  el("captureEmpty").style.display = "flex";
+  el("previewWrap").style.display = "none";
+  el("estimateRow").style.display = "none";
+  el("factsPanel").innerHTML = "";
+  setStatus("");
+  el("cameraInput").value = "";
+  el("uploadInput").value = "";
+}
+
+function handleFile(file){
+  if (!file) return;
+  state.file = file;
+  state.mediaType = file.type || "image/jpeg";
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    state.base64 = dataUrl.split(",")[1];
+    el("previewImg").src = dataUrl;
+    el("captureEmpty").style.display = "none";
+    el("previewWrap").style.display = "block";
+    el("estimateRow").style.display = "block";
+    el("factsPanel").innerHTML = "";
+    setStatus("");
+  };
+  reader.readAsDataURL(file);
+}
+
+// ---- Estimate via Claude vision ----
+el("estimateBtn").addEventListener("click", estimateMacros);
+
+async function estimateMacros(){
+  if (!state.base64) return;
+  el("estimateBtn").disabled = true;
+  setStatus("Analyzing plate…");
+
+  try {
+    if (!supabase) throw new Error("Supabase isn't configured.");
+    const { data, error } = await supabase.functions.invoke("estimate-macros", {
+      body: { image_base64: state.base64, media_type: state.mediaType }
+    });
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    const parsed = data.estimate;
+    state.estimate = parsed;
+    renderFacts(parsed);
+    setStatus("Estimate ready — adjust anything that looks off, then save.");
+  } catch (err) {
+    console.error(err);
+    setStatus("Couldn't estimate that one — try again or enter macros manually.", true);
+    renderFacts({
+      food_name: "New Plate",
+      serving_description: "1 serving",
+      calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0,
+      confidence_note: "Manual entry — estimate failed."
+    });
+  } finally {
+    el("estimateBtn").disabled = false;
+  }
+}
+
+// ---- Nutrition Facts panel ----
+function renderFacts(est){
+  el("factsPanel").innerHTML = `
+    <div class="facts">
+      <input class="food-name" id="fFoodName" value="${escapeAttr(est.food_name || "Plate")}" />
+      <input class="serving" id="fServing" value="${escapeAttr(est.serving_description || "1 serving")}" />
+      <div class="rule-thick"></div>
+      <div class="cal-row">
+        <span class="label">Calories</span>
+        <span class="value"><input id="fCal" type="number" inputmode="numeric" value="${num(est.calories)}" /></span>
+      </div>
+      <div class="rule-med"></div>
+      <div class="macro-row">
+        <span class="macro-label"><span class="dot protein"></span>Protein</span>
+        <span><input id="fProtein" type="number" inputmode="decimal" value="${num(est.protein_g)}" /><span class="unit">g</span></span>
+      </div>
+      <div class="macro-row">
+        <span class="macro-label"><span class="dot carb"></span>Carbs</span>
+        <span><input id="fCarb" type="number" inputmode="decimal" value="${num(est.carbs_g)}" /><span class="unit">g</span></span>
+      </div>
+      <div class="macro-row">
+        <span class="macro-label"><span class="dot fat"></span>Fat</span>
+        <span><input id="fFat" type="number" inputmode="decimal" value="${num(est.fat_g)}" /><span class="unit">g</span></span>
+      </div>
+      <div class="rule-thin"></div>
+      <div class="notes">${escapeHtml(est.confidence_note || "")}</div>
+      <div class="save-row">
+        <button class="btn-primary btn-full" id="saveBtn">Save to Log</button>
+      </div>
+    </div>
+  `;
+  el("saveBtn").addEventListener("click", saveEntry);
+}
+
+function num(n){ return (typeof n === "number" && !isNaN(n)) ? n : 0; }
+function escapeAttr(s){ return String(s).replace(/"/g,"&quot;"); }
+function escapeHtml(s){ return String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+// ---- Save to Supabase ----
+async function saveEntry(){
+  if (!supabase) { setStatus("Add your Supabase URL/key in the file to enable saving.", true); return; }
+  const entry = {
+    food_name: el("fFoodName").value.trim() || "Plate",
+    serving_description: el("fServing").value.trim(),
+    calories: Number(el("fCal").value) || 0,
+    protein_g: Number(el("fProtein").value) || 0,
+    carbs_g: Number(el("fCarb").value) || 0,
+    fat_g: Number(el("fFat").value) || 0,
+    notes: state.estimate ? (state.estimate.confidence_note || null) : null,
+  };
+  el("saveBtn").disabled = true;
+  setStatus("Saving…");
+  const { error } = await supabase.from("plate_logs").insert([entry]);
+  if (error) {
+    console.error(error);
+    setStatus("Save failed: " + error.message, true);
+    el("saveBtn").disabled = false;
+    return;
+  }
+  setStatus("Saved.");
+  resetCapture();
+  loadHistory();
+}
+
+// ---- History ----
+async function loadHistory(){
+  if (!supabase) return;
+  const { data, error } = await supabase
+    .from("plate_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(15);
+  if (error) { console.error(error); return; }
+  const list = el("historyList");
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div class="empty-hist">No entries yet.</div>';
+    return;
+  }
+  list.innerHTML = data.map(row => {
+    const when = new Date(row.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return `
+      <div class="log-item">
+        <div>
+          <div class="name">${escapeHtml(row.food_name)}</div>
+          <div class="meta">${when}</div>
+        </div>
+        <div class="macros">${Math.round(row.calories)} kcal<br/>P${Math.round(row.protein_g)} C${Math.round(row.carbs_g)} F${Math.round(row.fat_g)}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+loadHistory();
+</script>
+</body>
+</html>
