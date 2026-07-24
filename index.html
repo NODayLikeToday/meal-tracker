@@ -425,7 +425,20 @@
     padding:10px 0;
     border-bottom:1px solid var(--line);
     font-size:13px;
+    gap:8px;
   }
+  .log-item-delete{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--muted);
+    background:transparent;
+    border:none;
+    padding:4px 6px;
+    cursor:pointer;
+    flex:none;
+  }
+  .log-item-delete:hover{color:var(--cal);}
+  .log-item-delete:disabled{opacity:0.4;cursor:default;}
   .log-item .name{font-weight:600;}
   .log-item .meta{color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;}
   .log-item .macros{
@@ -1098,15 +1111,37 @@ async function loadHistory(){
     const when = new Date(row.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
     const meal = row.meal_type ? ` · ${escapeHtml(row.meal_type)}` : "";
     return `
-      <div class="log-item">
+      <div class="log-item" data-id="${row.id}">
         <div>
           <div class="name">${escapeHtml(row.food_name)}</div>
           <div class="meta">${when}${meal}</div>
         </div>
         <div class="macros">${Math.round(row.calories)} kcal<br/>P${Math.round(row.protein_g)} C${Math.round(row.carbs_g)} F${Math.round(row.fat_g)}</div>
+        <button type="button" class="log-item-delete" data-action="delete-log" aria-label="Delete entry">✕</button>
       </div>
     `;
   }).join("");
+}
+
+el("historyList").addEventListener("click", (e) => {
+  if (e.target.dataset.action !== "delete-log") return;
+  const row = e.target.closest(".log-item");
+  deleteLogEntry(row.dataset.id, e.target, () => loadHistory());
+});
+
+async function deleteLogEntry(id, btn, onDone){
+  if (!supabaseClient) return;
+  if (!confirm("Delete this entry?")) return;
+  btn.disabled = true;
+  const { error } = await supabaseClient.from("plate_logs").delete().eq("id", id);
+  if (error) {
+    console.error(error);
+    setStatus("Delete failed: " + error.message, true);
+    btn.disabled = false;
+    return;
+  }
+  setStatus("Entry deleted.");
+  onDone();
 }
 
 loadHistory();
@@ -1147,7 +1182,7 @@ function sumRows(rows){
 async function fetchRowsInRange(startIso, endIso){
   const { data, error } = await supabaseClient
     .from("plate_logs")
-    .select("food_name, meal_type, calories, protein_g, carbs_g, fat_g, created_at")
+    .select("id, food_name, meal_type, calories, protein_g, carbs_g, fat_g, created_at")
     .eq("user_name", state.currentUser)
     .gte("created_at", startIso)
     .lt("created_at", endIso)
@@ -1231,15 +1266,22 @@ async function loadDayLookup(){
     return;
   }
   entriesEl.innerHTML = rows.map(r => `
-    <div class="log-item">
+    <div class="log-item" data-id="${r.id}">
       <div>
         <div class="name">${escapeHtml(r.food_name)}</div>
         <div class="meta">${escapeHtml(r.meal_type || "")}</div>
       </div>
       <div class="macros">${Math.round(r.calories)} kcal<br/>P${Math.round(r.protein_g)} C${Math.round(r.carbs_g)} F${Math.round(r.fat_g)}</div>
+      <button type="button" class="log-item-delete" data-action="delete-log" aria-label="Delete entry">✕</button>
     </div>
   `).join("");
 }
+
+el("dayEntries").addEventListener("click", (e) => {
+  if (e.target.dataset.action !== "delete-log") return;
+  const row = e.target.closest(".log-item");
+  deleteLogEntry(row.dataset.id, e.target, () => refreshStats());
+});
 </script>
 </body>
 </html>
