@@ -339,9 +339,9 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 /* ============================================================== */
 
 const isConfigured = !SUPABASE_URL.includes("YOUR_") && !SUPABASE_ANON_KEY.includes("YOUR_");
-let supabase = null;
+let supabaseClient = null;
 if (isConfigured) {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } else {
   document.getElementById("configWarning").innerHTML =
     '<div class="config-warning">⚠ Supabase isn\'t configured yet. Open this file and set SUPABASE_URL / SUPABASE_ANON_KEY at the top of the &lt;script&gt; tag. Estimating still works — saving and history won\'t until it\'s set.</div>';
@@ -406,8 +406,8 @@ async function estimateMacros(){
   setStatus("Analyzing plate…");
 
   try {
-    if (!supabase) throw new Error("Supabase isn't configured.");
-    const { data, error } = await supabase.functions.invoke("estimate-macros", {
+    if (!supabaseClient) throw new Error("Supabase isn't configured.");
+    const { data, error } = await supabaseClient.functions.invoke("estimate-macros", {
       body: { image_base64: state.base64, media_type: state.mediaType }
     });
     if (error) throw error;
@@ -470,7 +470,7 @@ function escapeHtml(s){ return String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<
 
 // ---- Save to Supabase ----
 async function saveEntry(){
-  if (!supabase) { setStatus("Add your Supabase URL/key in the file to enable saving.", true); return; }
+  if (!supabaseClient) { setStatus("Add your Supabase URL/key in the file to enable saving.", true); return; }
   const entry = {
     food_name: el("fFoodName").value.trim() || "Plate",
     serving_description: el("fServing").value.trim(),
@@ -482,7 +482,7 @@ async function saveEntry(){
   };
   el("saveBtn").disabled = true;
   setStatus("Saving…");
-  const { error } = await supabase.from("plate_logs").insert([entry]);
+  const { error } = await supabaseClient.from("plate_logs").insert([entry]);
   if (error) {
     console.error(error);
     setStatus("Save failed: " + error.message, true);
@@ -496,8 +496,8 @@ async function saveEntry(){
 
 // ---- History ----
 async function loadHistory(){
-  if (!supabase) return;
-  const { data, error } = await supabase
+  if (!supabaseClient) return;
+  const { data, error } = await supabaseClient
     .from("plate_logs")
     .select("*")
     .order("created_at", { ascending: false })
