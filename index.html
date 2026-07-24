@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   :root{
     --paper:#ffffff;
@@ -190,8 +191,18 @@
   }
   .cal-row .value{
     display:flex;
+    justify-content:flex-end;
     align-items:baseline;
-    gap:4px;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:26px;
+    color:var(--cal);
+  }
+  .total-num{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:15px;
+    color:var(--ink);
   }
   .cal-row input{
     font-family:'IBM Plex Mono',monospace;
@@ -241,6 +252,122 @@
     line-height:1.4;
   }
 
+  /* Meal type selector */
+  .meal-select{
+    display:flex;
+    gap:6px;
+    margin:2px 0 4px;
+    flex-wrap:wrap;
+  }
+  .meal-pill{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    padding:6px 10px;
+    border:1.5px solid var(--ink);
+    border-radius:2px;
+    background:var(--paper);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .meal-pill.active{
+    background:var(--ink);
+    color:var(--paper);
+  }
+
+  /* Itemized ingredients */
+  .items-section{margin-top:4px;}
+  .items-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .item-row{
+    border-bottom:1px solid var(--line);
+    padding:8px 0;
+  }
+  .item-top{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .item-top input.item-name{
+    flex:1;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    border:none;
+    background:transparent;
+    color:var(--ink);
+    min-width:0;
+  }
+  .item-top input.item-qty{
+    width:64px;
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    color:var(--muted);
+    border:none;
+    background:transparent;
+    text-align:right;
+  }
+  .item-remove{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    color:var(--muted);
+    background:transparent;
+    border:none;
+    padding:2px 4px;
+    cursor:pointer;
+    flex:none;
+  }
+  .item-macros{
+    display:flex;
+    gap:14px;
+    margin-top:4px;
+  }
+  .item-macro-field{
+    display:flex;
+    flex-direction:column;
+  }
+  .item-macro-field label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .item-macro-field input{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:13px;
+    border:none;
+    background:transparent;
+    width:52px;
+    color:var(--ink);
+  }
+  .item-macro-field.cal input{color:var(--cal);}
+  .item-macro-field.protein input{color:var(--protein);}
+  .item-macro-field.carb input{color:var(--carb);}
+  .item-macro-field.fat input{color:var(--fat);}
+  .add-item-btn{
+    width:100%;
+    background:var(--paper);
+    border:1.5px dashed var(--muted);
+    color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    padding:9px;
+    margin-top:6px;
+    border-radius:2px;
+  }
+
   .save-row{margin-top:16px;display:flex;gap:10px;}
 
   /* History */
@@ -284,6 +411,140 @@
     margin-bottom:18px;
     line-height:1.5;
   }
+
+  /* User selector */
+  .user-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-bottom:16px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .user-row select{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--ink);
+    background:var(--paper);
+    border:1.5px solid var(--ink);
+    border-radius:2px;
+    padding:5px 8px;
+  }
+
+  /* Tabs */
+  .tabs{
+    display:flex;
+    border-bottom:3px solid var(--ink);
+    margin-bottom:20px;
+  }
+  .tab-btn{
+    flex:1;
+    background:var(--paper);
+    border:none;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    padding:10px 0;
+    border-bottom:3px solid transparent;
+    margin-bottom:-3px;
+  }
+  .tab-btn.active{
+    color:var(--ink);
+    border-bottom:3px solid var(--ink);
+  }
+
+  /* Stats dashboard */
+  .stat-cards{
+    display:flex;
+    gap:10px;
+    margin-bottom:24px;
+  }
+  .stat-card{
+    flex:1;
+    border:3px solid var(--ink);
+    padding:12px 14px;
+  }
+  .stat-card .stat-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .stat-card .stat-cal{
+    font-family:'Archivo Black',sans-serif;
+    font-size:26px;
+    color:var(--cal);
+    line-height:1;
+  }
+  .stat-card .stat-cal-unit{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    margin-left:4px;
+  }
+  .stat-card .stat-macros{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+
+  .day-lookup{
+    border:3px solid var(--ink);
+    padding:14px;
+  }
+  .day-lookup-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:12px;
+    gap:10px;
+  }
+  .day-lookup-header h2{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0;
+  }
+  .day-lookup-header input[type=date]{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    border:1.5px solid var(--ink);
+    border-radius:2px;
+    padding:5px 8px;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .day-totals{
+    display:flex;
+    justify-content:space-between;
+    padding:10px 0;
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    margin-bottom:14px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+  }
+  .day-totals .dt-item{text-align:center;flex:1;}
+  .day-totals .dt-value{font-size:16px;font-weight:700;display:block;}
+  .day-totals .dt-label{color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:0.06em;}
+  .chart-wrap{position:relative;height:180px;margin-bottom:14px;}
+  .day-entries .log-item{padding:8px 0;}
+  .stats-empty{color:var(--muted);font-size:13px;padding:20px 0;text-align:center;}
 </style>
 </head>
 <body>
@@ -297,32 +558,77 @@
 
   <div id="configWarning"></div>
 
-  <div class="capture-box" id="captureBox">
-    <div class="capture-empty" id="captureEmpty">
-      <p>Take a photo of your plate, or upload one, to get a macro estimate.</p>
-      <div class="btn-row">
-        <button class="btn-secondary" id="cameraBtn">Take Photo</button>
-        <button class="btn-secondary" id="uploadBtn">Upload</button>
+  <div class="user-row">
+    Logging as
+    <select id="userSelect">
+      <option value="Nick">Nick</option>
+      <option value="Ashleigh">Ashleigh</option>
+    </select>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button type="button" class="tab-btn active" data-tab="log">Log</button>
+    <button type="button" class="tab-btn" data-tab="stats">Stats</button>
+  </div>
+
+  <div id="logTab">
+    <div class="capture-box" id="captureBox">
+      <div class="capture-empty" id="captureEmpty">
+        <p>Take a photo of your plate, or upload one, to get a macro estimate.</p>
+        <div class="btn-row">
+          <button class="btn-secondary" id="cameraBtn">Take Photo</button>
+          <button class="btn-secondary" id="uploadBtn">Upload</button>
+        </div>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" />
+        <input type="file" id="uploadInput" accept="image/*" />
       </div>
-      <input type="file" id="cameraInput" accept="image/*" capture="environment" />
-      <input type="file" id="uploadInput" accept="image/*" />
+      <div class="preview-wrap" id="previewWrap" style="display:none;">
+        <img id="previewImg" alt="Plate preview" />
+        <div class="retake" id="retakeBtn">RETAKE</div>
+      </div>
+      <div class="estimate-row" id="estimateRow" style="display:none;">
+        <button class="btn-primary btn-full" id="estimateBtn">Estimate Macros</button>
+      </div>
     </div>
-    <div class="preview-wrap" id="previewWrap" style="display:none;">
-      <img id="previewImg" alt="Plate preview" />
-      <div class="retake" id="retakeBtn">RETAKE</div>
-    </div>
-    <div class="estimate-row" id="estimateRow" style="display:none;">
-      <button class="btn-primary btn-full" id="estimateBtn">Estimate Macros</button>
+
+    <div class="status-line" id="statusLine"></div>
+
+    <div id="factsPanel"></div>
+
+    <div class="history">
+      <h2>Recent Plates</h2>
+      <div id="historyList"><div class="empty-hist">No entries yet.</div></div>
     </div>
   </div>
 
-  <div class="status-line" id="statusLine"></div>
+  <div id="statsTab" style="display:none;">
+    <div class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-label">Today</div>
+        <div><span class="stat-cal" id="todayCal">0</span><span class="stat-cal-unit">kcal</span></div>
+        <div class="stat-macros" id="todayMacros">P0 · C0 · F0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Last 7 Days</div>
+        <div><span class="stat-cal" id="weekCal">0</span><span class="stat-cal-unit">kcal</span></div>
+        <div class="stat-macros" id="weekMacros">P0 · C0 · F0</div>
+      </div>
+    </div>
 
-  <div id="factsPanel"></div>
-
-  <div class="history">
-    <h2>Recent Plates</h2>
-    <div id="historyList"><div class="empty-hist">No entries yet.</div></div>
+    <div class="day-lookup">
+      <div class="day-lookup-header">
+        <h2>Day Lookup</h2>
+        <input type="date" id="dayPicker" />
+      </div>
+      <div class="day-totals" id="dayTotals">
+        <div class="dt-item"><span class="dt-value" id="dtCal">0</span><span class="dt-label">Kcal</span></div>
+        <div class="dt-item"><span class="dt-value" id="dtProtein">0</span><span class="dt-label">Protein g</span></div>
+        <div class="dt-item"><span class="dt-value" id="dtCarb">0</span><span class="dt-label">Carbs g</span></div>
+        <div class="dt-item"><span class="dt-value" id="dtFat">0</span><span class="dt-label">Fat g</span></div>
+      </div>
+      <div class="chart-wrap"><canvas id="dayChart"></canvas></div>
+      <div class="day-entries" id="dayEntries"></div>
+    </div>
   </div>
 
 </div>
@@ -347,11 +653,21 @@ if (isConfigured) {
     '<div class="config-warning">⚠ Supabase isn\'t configured yet. Open this file and set SUPABASE_URL / SUPABASE_ANON_KEY at the top of the &lt;script&gt; tag. Estimating still works — saving and history won\'t until it\'s set.</div>';
 }
 
+const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack", "Drinks"];
+const USERS = ["Nick", "Ashleigh"];
+let itemSeq = 0;
+const newItemId = () => "item_" + (++itemSeq) + "_" + Date.now();
+
 const state = {
   file: null,
   base64: null,
   mediaType: null,
-  estimate: null, // {food_name, serving_description, calories, protein_g, carbs_g, fat_g, confidence_note}
+  estimate: null, // {food_name, confidence_note}
+  items: [],      // [{id, name, quantity, calories, protein_g, carbs_g, fat_g}]
+  mealType: null,
+  totals: { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
+  currentUser: "Nick",
+  activeTab: "log",
 };
 
 const el = (id) => document.getElementById(id);
@@ -361,6 +677,50 @@ const setStatus = (msg, isErr=false) => {
   statusLine.classList.toggle("err", !!isErr);
 };
 
+// ---- Which user is logging right now ----
+// Priority: ?user= URL param > last choice remembered on this device > Nick.
+function resolveInitialUser(){
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl = params.get("user");
+  if (fromUrl) {
+    const match = USERS.find(u => u.toLowerCase() === fromUrl.toLowerCase());
+    if (match) return match;
+  }
+  try {
+    const stored = localStorage.getItem("plateFactsUser");
+    if (stored && USERS.includes(stored)) return stored;
+  } catch (e) { /* localStorage unavailable, ignore */ }
+  return USERS[0];
+}
+
+state.currentUser = resolveInitialUser();
+el("userSelect").value = state.currentUser;
+el("userSelect").addEventListener("change", (e) => {
+  state.currentUser = e.target.value;
+  try { localStorage.setItem("plateFactsUser", state.currentUser); } catch (e) { /* ignore */ }
+  loadHistory();
+  if (state.activeTab === "stats") refreshStats();
+});
+
+// ---- Tabs ----
+el("tabs").addEventListener("click", (e) => {
+  const btn = e.target.closest(".tab-btn");
+  if (!btn) return;
+  state.activeTab = btn.dataset.tab;
+  el("tabs").querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b === btn));
+  el("logTab").style.display = state.activeTab === "log" ? "block" : "none";
+  el("statsTab").style.display = state.activeTab === "stats" ? "block" : "none";
+  if (state.activeTab === "stats") refreshStats();
+});
+
+function guessMealType(){
+  const h = new Date().getHours();
+  if (h < 11) return "Breakfast";
+  if (h < 15) return "Lunch";
+  if (h < 21) return "Dinner";
+  return "Snack";
+}
+
 // ---- Capture wiring ----
 el("cameraBtn").addEventListener("click", () => el("cameraInput").click());
 el("uploadBtn").addEventListener("click", () => el("uploadInput").click());
@@ -369,7 +729,8 @@ el("uploadInput").addEventListener("change", (e) => handleFile(e.target.files[0]
 el("retakeBtn").addEventListener("click", resetCapture);
 
 function resetCapture(){
-  state.file = null; state.base64 = null; state.mediaType = null; state.estimate = null;
+  state.file = null; state.base64 = null; state.mediaType = null;
+  state.estimate = null; state.items = []; state.mealType = null;
   el("captureEmpty").style.display = "flex";
   el("previewWrap").style.display = "none";
   el("estimateRow").style.display = "none";
@@ -397,7 +758,7 @@ function handleFile(file){
   reader.readAsDataURL(file);
 }
 
-// ---- Estimate via Claude vision ----
+// ---- Estimate via Gemini vision (proxied through the Supabase Edge Function) ----
 el("estimateBtn").addEventListener("click", estimateMacros);
 
 async function estimateMacros(){
@@ -415,15 +776,14 @@ async function estimateMacros(){
     const parsed = data.estimate;
     state.estimate = parsed;
     renderFacts(parsed);
-    setStatus("Estimate ready — adjust anything that looks off, then save.");
+    setStatus("Estimate ready — edit items, add anything it missed, then save.");
   } catch (err) {
     console.error(err);
-    setStatus("Couldn't estimate that one — try again or enter macros manually.", true);
+    setStatus("Couldn't estimate that one — add items manually below.", true);
     renderFacts({
       food_name: "New Plate",
-      serving_description: "1 serving",
-      calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0,
-      confidence_note: "Manual entry — estimate failed."
+      confidence_note: "Manual entry — estimate failed.",
+      items: [{ name: "", quantity: "1 serving", calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }]
     });
   } finally {
     el("estimateBtn").disabled = false;
@@ -432,39 +792,143 @@ async function estimateMacros(){
 
 // ---- Nutrition Facts panel ----
 function renderFacts(est){
+  const rawItems = (est.items && est.items.length) ? est.items
+    : [{ name: "", quantity: "1 serving", calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }];
+  state.items = rawItems.map(it => ({
+    id: newItemId(),
+    name: it.name || "",
+    quantity: it.quantity || "",
+    calories: num(it.calories),
+    protein_g: num(it.protein_g),
+    carbs_g: num(it.carbs_g),
+    fat_g: num(it.fat_g),
+  }));
+  state.mealType = guessMealType();
+
   el("factsPanel").innerHTML = `
     <div class="facts">
       <input class="food-name" id="fFoodName" value="${escapeAttr(est.food_name || "Plate")}" />
-      <input class="serving" id="fServing" value="${escapeAttr(est.serving_description || "1 serving")}" />
+      <div class="meal-select" id="mealSelect">
+        ${MEAL_TYPES.map(m => `<button type="button" class="meal-pill${m === state.mealType ? " active" : ""}" data-meal="${m}">${m}</button>`).join("")}
+      </div>
       <div class="rule-thick"></div>
       <div class="cal-row">
         <span class="label">Calories</span>
-        <span class="value"><input id="fCal" type="number" inputmode="numeric" value="${num(est.calories)}" /></span>
+        <span class="value" id="totalCal">0</span>
       </div>
       <div class="rule-med"></div>
       <div class="macro-row">
         <span class="macro-label"><span class="dot protein"></span>Protein</span>
-        <span><input id="fProtein" type="number" inputmode="decimal" value="${num(est.protein_g)}" /><span class="unit">g</span></span>
+        <span><span class="total-num" id="totalProtein">0</span><span class="unit">g</span></span>
       </div>
       <div class="macro-row">
         <span class="macro-label"><span class="dot carb"></span>Carbs</span>
-        <span><input id="fCarb" type="number" inputmode="decimal" value="${num(est.carbs_g)}" /><span class="unit">g</span></span>
+        <span><span class="total-num" id="totalCarb">0</span><span class="unit">g</span></span>
       </div>
       <div class="macro-row">
         <span class="macro-label"><span class="dot fat"></span>Fat</span>
-        <span><input id="fFat" type="number" inputmode="decimal" value="${num(est.fat_g)}" /><span class="unit">g</span></span>
+        <span><span class="total-num" id="totalFat">0</span><span class="unit">g</span></span>
       </div>
       <div class="rule-thin"></div>
       <div class="notes">${escapeHtml(est.confidence_note || "")}</div>
+      <div class="rule-thin"></div>
+      <div class="items-section">
+        <div class="items-header"><span>Ingredients</span><span>tap any field to edit</span></div>
+        <div id="itemsList"></div>
+        <button type="button" class="add-item-btn" id="addItemBtn">+ Add item</button>
+      </div>
       <div class="save-row">
         <button class="btn-primary btn-full" id="saveBtn">Save to Log</button>
       </div>
     </div>
   `;
+
+  renderItemsList();
+  el("itemsList").addEventListener("input", onItemInput);
+  el("itemsList").addEventListener("click", onItemClick);
+  el("addItemBtn").addEventListener("click", onAddItem);
+  el("mealSelect").addEventListener("click", onMealSelect);
   el("saveBtn").addEventListener("click", saveEntry);
 }
 
-function num(n){ return (typeof n === "number" && !isNaN(n)) ? n : 0; }
+function itemRowHtml(item){
+  return `
+    <div class="item-row" data-id="${item.id}">
+      <div class="item-top">
+        <input class="item-name" data-field="name" value="${escapeAttr(item.name)}" placeholder="Item name" />
+        <input class="item-qty" data-field="quantity" value="${escapeAttr(item.quantity)}" placeholder="qty" />
+        <button type="button" class="item-remove" data-action="remove" aria-label="Remove item">✕</button>
+      </div>
+      <div class="item-macros">
+        <div class="item-macro-field cal"><label>Kcal</label><input type="number" inputmode="numeric" data-field="calories" value="${num(item.calories)}" /></div>
+        <div class="item-macro-field protein"><label>Protein g</label><input type="number" inputmode="decimal" data-field="protein_g" value="${num(item.protein_g)}" /></div>
+        <div class="item-macro-field carb"><label>Carb g</label><input type="number" inputmode="decimal" data-field="carbs_g" value="${num(item.carbs_g)}" /></div>
+        <div class="item-macro-field fat"><label>Fat g</label><input type="number" inputmode="decimal" data-field="fat_g" value="${num(item.fat_g)}" /></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderItemsList(){
+  el("itemsList").innerHTML = state.items.map(itemRowHtml).join("");
+  recomputeTotals();
+}
+
+function onItemInput(e){
+  const field = e.target.dataset.field;
+  if (!field) return;
+  const row = e.target.closest(".item-row");
+  const item = state.items.find(i => i.id === row.dataset.id);
+  if (!item) return;
+  if (field === "name" || field === "quantity") {
+    item[field] = e.target.value;
+  } else {
+    item[field] = Number(e.target.value) || 0;
+  }
+  recomputeTotals();
+}
+
+function onItemClick(e){
+  if (e.target.dataset.action !== "remove") return;
+  const row = e.target.closest(".item-row");
+  state.items = state.items.filter(i => i.id !== row.dataset.id);
+  renderItemsList();
+}
+
+function onAddItem(){
+  state.items.push({ id: newItemId(), name: "", quantity: "1 serving", calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 });
+  renderItemsList();
+  const rows = el("itemsList").querySelectorAll(".item-row");
+  const last = rows[rows.length - 1];
+  if (last) last.querySelector(".item-name").focus();
+}
+
+function onMealSelect(e){
+  if (!e.target.classList.contains("meal-pill")) return;
+  state.mealType = e.target.dataset.meal;
+  el("mealSelect").querySelectorAll(".meal-pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.meal === state.mealType);
+  });
+}
+
+function round1(n){ return Math.round(n * 10) / 10; }
+
+function recomputeTotals(){
+  const totals = state.items.reduce((acc, i) => {
+    acc.calories += num(i.calories);
+    acc.protein_g += num(i.protein_g);
+    acc.carbs_g += num(i.carbs_g);
+    acc.fat_g += num(i.fat_g);
+    return acc;
+  }, { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 });
+  state.totals = totals;
+  el("totalCal").textContent = Math.round(totals.calories);
+  el("totalProtein").textContent = round1(totals.protein_g);
+  el("totalCarb").textContent = round1(totals.carbs_g);
+  el("totalFat").textContent = round1(totals.fat_g);
+}
+
+function num(n){ return (typeof n === "number" && !isNaN(n)) ? n : (Number(n) || 0); }
 function escapeAttr(s){ return String(s).replace(/"/g,"&quot;"); }
 function escapeHtml(s){ return String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
 
@@ -473,11 +937,13 @@ async function saveEntry(){
   if (!supabaseClient) { setStatus("Add your Supabase URL/key in the file to enable saving.", true); return; }
   const entry = {
     food_name: el("fFoodName").value.trim() || "Plate",
-    serving_description: el("fServing").value.trim(),
-    calories: Number(el("fCal").value) || 0,
-    protein_g: Number(el("fProtein").value) || 0,
-    carbs_g: Number(el("fCarb").value) || 0,
-    fat_g: Number(el("fFat").value) || 0,
+    meal_type: state.mealType || null,
+    user_name: state.currentUser,
+    calories: Math.round(state.totals.calories),
+    protein_g: round1(state.totals.protein_g),
+    carbs_g: round1(state.totals.carbs_g),
+    fat_g: round1(state.totals.fat_g),
+    items: state.items.map(({ id, ...rest }) => rest),
     notes: state.estimate ? (state.estimate.confidence_note || null) : null,
   };
   el("saveBtn").disabled = true;
@@ -500,6 +966,7 @@ async function loadHistory(){
   const { data, error } = await supabaseClient
     .from("plate_logs")
     .select("*")
+    .eq("user_name", state.currentUser)
     .order("created_at", { ascending: false })
     .limit(15);
   if (error) { console.error(error); return; }
@@ -510,11 +977,12 @@ async function loadHistory(){
   }
   list.innerHTML = data.map(row => {
     const when = new Date(row.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const meal = row.meal_type ? ` · ${escapeHtml(row.meal_type)}` : "";
     return `
       <div class="log-item">
         <div>
           <div class="name">${escapeHtml(row.food_name)}</div>
-          <div class="meta">${when}</div>
+          <div class="meta">${when}${meal}</div>
         </div>
         <div class="macros">${Math.round(row.calories)} kcal<br/>P${Math.round(row.protein_g)} C${Math.round(row.carbs_g)} F${Math.round(row.fat_g)}</div>
       </div>
@@ -523,6 +991,136 @@ async function loadHistory(){
 }
 
 loadHistory();
+
+// ================== Stats Dashboard ==================
+
+let dayChart = null;
+const dayPicker = el("dayPicker");
+
+function todayLocalDateStr(){
+  const d = new Date();
+  const tzOffsetMs = d.getTimezoneOffset() * 60000;
+  return new Date(d - tzOffsetMs).toISOString().slice(0, 10);
+}
+dayPicker.value = todayLocalDateStr();
+dayPicker.addEventListener("change", () => loadDayLookup());
+
+// Local-time day boundaries as ISO strings, for a "YYYY-MM-DD" string or a Date.
+function dayBoundsIso(dateInput){
+  const d = (typeof dateInput === "string") ? new Date(dateInput + "T00:00:00") : new Date(dateInput);
+  d.setHours(0, 0, 0, 0);
+  const start = new Date(d);
+  const end = new Date(d);
+  end.setDate(end.getDate() + 1);
+  return { startIso: start.toISOString(), endIso: end.toISOString() };
+}
+
+function sumRows(rows){
+  return rows.reduce((acc, r) => {
+    acc.calories += Number(r.calories) || 0;
+    acc.protein_g += Number(r.protein_g) || 0;
+    acc.carbs_g += Number(r.carbs_g) || 0;
+    acc.fat_g += Number(r.fat_g) || 0;
+    return acc;
+  }, { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 });
+}
+
+async function fetchRowsInRange(startIso, endIso){
+  const { data, error } = await supabaseClient
+    .from("plate_logs")
+    .select("food_name, meal_type, calories, protein_g, carbs_g, fat_g, created_at")
+    .eq("user_name", state.currentUser)
+    .gte("created_at", startIso)
+    .lt("created_at", endIso)
+    .order("created_at", { ascending: true });
+  if (error) { console.error(error); return []; }
+  return data || [];
+}
+
+async function refreshStats(){
+  if (!supabaseClient) return;
+  const today = dayBoundsIso(new Date());
+  const weekStart = new Date(); weekStart.setHours(0,0,0,0); weekStart.setDate(weekStart.getDate() - 6);
+  const week = { startIso: weekStart.toISOString(), endIso: today.endIso };
+
+  const [todayRows, weekRows] = await Promise.all([
+    fetchRowsInRange(today.startIso, today.endIso),
+    fetchRowsInRange(week.startIso, week.endIso),
+  ]);
+
+  const t = sumRows(todayRows);
+  el("todayCal").textContent = Math.round(t.calories);
+  el("todayMacros").textContent = `P${round1(t.protein_g)} · C${round1(t.carbs_g)} · F${round1(t.fat_g)}`;
+
+  const w = sumRows(weekRows);
+  el("weekCal").textContent = Math.round(w.calories);
+  el("weekMacros").textContent = `P${round1(w.protein_g)} · C${round1(w.carbs_g)} · F${round1(w.fat_g)}`;
+
+  loadDayLookup();
+}
+
+async function loadDayLookup(){
+  if (!supabaseClient) return;
+  const { startIso, endIso } = dayBoundsIso(dayPicker.value);
+  const rows = await fetchRowsInRange(startIso, endIso);
+  const totals = sumRows(rows);
+
+  el("dtCal").textContent = Math.round(totals.calories);
+  el("dtProtein").textContent = round1(totals.protein_g);
+  el("dtCarb").textContent = round1(totals.carbs_g);
+  el("dtFat").textContent = round1(totals.fat_g);
+
+  // Calories by meal type
+  const byMeal = {};
+  MEAL_TYPES.forEach(m => byMeal[m] = 0);
+  let other = 0;
+  rows.forEach(r => {
+    if (r.meal_type && byMeal.hasOwnProperty(r.meal_type)) byMeal[r.meal_type] += Number(r.calories) || 0;
+    else other += Number(r.calories) || 0;
+  });
+  const labels = [...MEAL_TYPES];
+  const values = MEAL_TYPES.map(m => Math.round(byMeal[m]));
+  if (other > 0) { labels.push("Other"); values.push(Math.round(other)); }
+
+  const ctx = el("dayChart").getContext("2d");
+  if (dayChart) dayChart.destroy();
+  dayChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: "#c1401c",
+        borderRadius: 2,
+        maxBarThickness: 40,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { font: { family: "'IBM Plex Mono'", size: 10 } }, title: { display: true, text: "kcal", font: { family: "'IBM Plex Mono'", size: 10 } } },
+        x: { ticks: { font: { family: "'IBM Plex Mono'", size: 10 } } }
+      }
+    }
+  });
+
+  const entriesEl = el("dayEntries");
+  if (!rows.length) {
+    entriesEl.innerHTML = '<div class="stats-empty">Nothing logged this day.</div>';
+    return;
+  }
+  entriesEl.innerHTML = rows.map(r => `
+    <div class="log-item">
+      <div>
+        <div class="name">${escapeHtml(r.food_name)}</div>
+        <div class="meta">${escapeHtml(r.meal_type || "")}</div>
+      </div>
+      <div class="macros">${Math.round(r.calories)} kcal<br/>P${Math.round(r.protein_g)} C${Math.round(r.carbs_g)} F${Math.round(r.fat_g)}</div>
+    </div>
+  `).join("");
+}
 </script>
 </body>
 </html>
