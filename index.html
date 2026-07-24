@@ -134,6 +134,29 @@
   }
   .estimate-row{margin-top:12px;}
 
+  .describe-box{margin-top:14px;}
+  .describe-divider{
+    text-align:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+  .describe-box textarea{
+    width:100%;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    border:1.5px solid var(--ink);
+    border-radius:2px;
+    padding:10px;
+    resize:vertical;
+    color:var(--ink);
+    margin-bottom:8px;
+  }
+  .describe-box textarea:focus{outline:none;}
+
   .status-line{
     font-family:'IBM Plex Mono',monospace;
     font-size:12px;
@@ -604,6 +627,12 @@
       </div>
     </div>
 
+    <div class="describe-box">
+      <div class="describe-divider">— or describe it —</div>
+      <textarea id="descriptionInput" rows="2" placeholder="e.g. Grilled chicken breast with a cup of rice and steamed broccoli"></textarea>
+      <button class="btn-secondary btn-full" id="describeBtn">Estimate from Description</button>
+    </div>
+
     <div class="status-line" id="statusLine"></div>
 
     <div id="factsPanel"></div>
@@ -636,7 +665,7 @@
       <div class="day-totals" id="dayTotals">
         <div class="dt-item"><span class="dt-value" id="dtCal">0</span><span class="dt-label">Kcal</span></div>
         <div class="dt-item"><span class="dt-value" id="dtProtein">0</span><span class="dt-label">Protein g</span></div>
-        <div class="dt-item"><span class="dt-value" id="dtCarb">0</span><span class="dt-label">Carbs g</span></div>
+        <div class="dt-item"><span class="dt-value" id="dtCarb">0</span><span class="dt-label">Net Carbs g</span></div>
         <div class="dt-item"><span class="dt-value" id="dtFat">0</span><span class="dt-label">Fat g</span></div>
       </div>
       <div class="chart-wrap"><canvas id="dayChart"></canvas></div>
@@ -751,6 +780,7 @@ function resetCapture(){
   setStatus("");
   el("cameraInput").value = "";
   el("uploadInput").value = "";
+  el("descriptionInput").value = "";
 }
 
 function handleFile(file){
@@ -803,6 +833,45 @@ async function estimateMacros(){
   }
 }
 
+// ---- Estimate from a typed description (no photo) ----
+el("describeBtn").addEventListener("click", estimateFromDescription);
+
+async function estimateFromDescription(){
+  const description = el("descriptionInput").value.trim();
+  if (!description) { setStatus("Describe what you ate first.", true); return; }
+  el("describeBtn").disabled = true;
+  setStatus("Analyzing description…");
+
+  try {
+    if (!supabaseClient) throw new Error("Supabase isn't configured.");
+    const { data, error } = await supabaseClient.functions.invoke("estimate-macros", {
+      body: { description }
+    });
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    // This estimate isn't tied to a photo — clear any in-progress capture state.
+    state.file = null; state.base64 = null; state.mediaType = null;
+    el("captureEmpty").style.display = "flex";
+    el("previewWrap").style.display = "none";
+    el("estimateRow").style.display = "none";
+    const parsed = data.estimate;
+    state.estimate = parsed;
+    renderFacts(parsed);
+    el("descriptionInput").value = "";
+    setStatus("Estimate ready — edit items, add anything it missed, then save.");
+  } catch (err) {
+    console.error(err);
+    setStatus("Couldn't estimate that — add items manually below.", true);
+    renderFacts({
+      food_name: "New Plate",
+      confidence_note: "Manual entry — estimate failed.",
+      items: [{ name: "", quantity: "1 serving", calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }]
+    });
+  } finally {
+    el("describeBtn").disabled = false;
+  }
+}
+
 // ---- Nutrition Facts panel ----
 function renderFacts(est){
   const rawItems = (est.items && est.items.length) ? est.items
@@ -835,7 +904,7 @@ function renderFacts(est){
         <span><span class="total-num" id="totalProtein">0</span><span class="unit">g</span></span>
       </div>
       <div class="macro-row">
-        <span class="macro-label"><span class="dot carb"></span>Carbs</span>
+        <span class="macro-label"><span class="dot carb"></span>Net Carbs</span>
         <span><span class="total-num" id="totalCarb">0</span><span class="unit">g</span></span>
       </div>
       <div class="macro-row">
@@ -876,7 +945,7 @@ function itemRowHtml(item){
       <div class="item-macros">
         <div class="item-macro-field cal"><label>Kcal</label><input type="number" inputmode="numeric" data-field="calories" value="${num(item.calories)}" /></div>
         <div class="item-macro-field protein"><label>Protein g</label><input type="number" inputmode="decimal" data-field="protein_g" value="${num(item.protein_g)}" /></div>
-        <div class="item-macro-field carb"><label>Carb g</label><input type="number" inputmode="decimal" data-field="carbs_g" value="${num(item.carbs_g)}" /></div>
+        <div class="item-macro-field carb"><label>Net Carb g</label><input type="number" inputmode="decimal" data-field="carbs_g" value="${num(item.carbs_g)}" /></div>
         <div class="item-macro-field fat"><label>Fat g</label><input type="number" inputmode="decimal" data-field="fat_g" value="${num(item.fat_g)}" /></div>
       </div>
     </div>
