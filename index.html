@@ -327,6 +327,19 @@
     cursor:pointer;
     flex:none;
   }
+  .item-lookup{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--ink);
+    background:var(--paper);
+    border:1.5px solid var(--ink);
+    border-radius:2px;
+    padding:3px 7px;
+    cursor:pointer;
+    flex:none;
+    white-space:nowrap;
+  }
+  .item-lookup:disabled{opacity:0.5;cursor:default;}
   .item-macros{
     display:flex;
     gap:14px;
@@ -857,6 +870,7 @@ function itemRowHtml(item){
       <div class="item-top">
         <input class="item-name" data-field="name" value="${escapeAttr(item.name)}" placeholder="Item name" />
         <input class="item-qty" data-field="quantity" value="${escapeAttr(item.quantity)}" placeholder="qty" />
+        <button type="button" class="item-lookup" data-action="lookup" title="Look up macros for this item">⌕ Est.</button>
         <button type="button" class="item-remove" data-action="remove" aria-label="Remove item">✕</button>
       </div>
       <div class="item-macros">
@@ -889,10 +903,46 @@ function onItemInput(e){
 }
 
 function onItemClick(e){
-  if (e.target.dataset.action !== "remove") return;
+  const action = e.target.dataset.action;
+  if (!action) return;
   const row = e.target.closest(".item-row");
-  state.items = state.items.filter(i => i.id !== row.dataset.id);
-  renderItemsList();
+  if (action === "remove") {
+    state.items = state.items.filter(i => i.id !== row.dataset.id);
+    renderItemsList();
+  } else if (action === "lookup") {
+    const item = state.items.find(i => i.id === row.dataset.id);
+    if (item) lookupItemMacros(item, e.target);
+  }
+}
+
+async function lookupItemMacros(item, btn){
+  const name = (item.name || "").trim();
+  if (!name) { setStatus("Add an item name before looking it up.", true); return; }
+  if (!supabaseClient) { setStatus("Supabase isn't configured.", true); return; }
+
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "…";
+  setStatus(`Looking up ${name}…`);
+  try {
+    const { data, error } = await supabaseClient.functions.invoke("lookup-item", {
+      body: { name, quantity: item.quantity || "1 serving" }
+    });
+    if (error) throw error;
+    if (data && data.error) throw new Error(data.error);
+    const est = data.estimate;
+    item.calories = num(est.calories);
+    item.protein_g = num(est.protein_g);
+    item.carbs_g = num(est.carbs_g);
+    item.fat_g = num(est.fat_g);
+    renderItemsList();
+    setStatus(`Updated macros for ${name}.`);
+  } catch (err) {
+    console.error(err);
+    setStatus(`Couldn't look up ${name} — enter macros manually.`, true);
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 }
 
 function onAddItem(){
