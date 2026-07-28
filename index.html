@@ -487,6 +487,176 @@
     padding:5px 8px;
   }
 
+  /* Training day toggle */
+  .daytype-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-bottom:20px;
+  }
+  .daytype-row .daytype-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+
+  /* Progress vs goal */
+  .progress-section{
+    border:3px solid var(--ink);
+    padding:14px;
+    margin-bottom:20px;
+  }
+  .progress-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .progress-header h2{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0;
+  }
+  .daytype-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    background:var(--ink);
+    color:var(--paper);
+    padding:3px 8px;
+    border-radius:2px;
+  }
+  .progress-row{margin-bottom:12px;}
+  .progress-row:last-child{margin-bottom:0;}
+  .progress-row-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    margin-bottom:4px;
+  }
+  .progress-row-top .p-label{
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink);
+  }
+  .progress-row-top .p-nums{color:var(--muted);}
+  .progress-track{
+    height:8px;
+    background:var(--line);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    border-radius:2px;
+  }
+  .progress-nogoal{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    font-style:italic;
+  }
+
+  /* Goals editor */
+  .goals-editor{
+    border:1.5px solid var(--ink);
+    border-radius:2px;
+    padding:0 14px;
+    margin-bottom:20px;
+  }
+  .goals-editor summary{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink);
+    padding:12px 0;
+    cursor:pointer;
+  }
+  .goals-editor[open] summary{border-bottom:1px solid var(--line);}
+  .goals-grid{
+    display:flex;
+    gap:16px;
+    padding:14px 0;
+  }
+  .goals-col{flex:1;}
+  .goals-col h3{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 8px;
+  }
+  .goals-col label{
+    display:block;
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .goals-col input{
+    display:block;
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    border:none;
+    border-bottom:1.5px solid var(--line);
+    padding:4px 0;
+    margin-top:2px;
+    color:var(--ink);
+  }
+  .goals-col input:focus{outline:none;border-bottom-color:var(--ink);}
+  #saveGoalsBtn{margin-bottom:14px;}
+
+  /* Weekly list */
+  .week-section{
+    border:3px solid var(--ink);
+    padding:14px;
+    margin-bottom:20px;
+  }
+  .week-section-title{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 10px;
+  }
+  .week-day-row{
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--line);
+    padding:9px 0;
+    text-align:left;
+    cursor:pointer;
+  }
+  .week-day-row:last-child{border-bottom:none;}
+  .week-day-row .wd-date{
+    font-size:13px;
+    font-weight:600;
+  }
+  .week-day-row .wd-macros{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    text-align:right;
+  }
+  .week-day-row.active .wd-date{color:var(--cal);}
+
   /* Tabs */
   .tabs{
     display:flex;
@@ -615,6 +785,12 @@
     </select>
   </div>
 
+  <div class="daytype-row" id="dayTypeRow">
+    <span class="daytype-label">Today:</span>
+    <button type="button" class="meal-pill" data-daytype="rest">Rest Day</button>
+    <button type="button" class="meal-pill" data-daytype="training">Training Day</button>
+  </div>
+
   <div class="tabs" id="tabs">
     <button type="button" class="tab-btn active" data-tab="log">Log</button>
     <button type="button" class="tab-btn" data-tab="stats">Stats</button>
@@ -668,6 +844,40 @@
         <div><span class="stat-cal" id="weekCal">0</span><span class="stat-cal-unit">kcal</span></div>
         <div class="stat-macros" id="weekMacros">P0 · C0 · F0</div>
       </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-header">
+        <h2>Today vs Goal</h2>
+        <span class="daytype-tag" id="dayTypeTag">Rest Day</span>
+      </div>
+      <div id="progressBars"></div>
+    </div>
+
+    <details class="goals-editor">
+      <summary>Edit Goals</summary>
+      <div class="goals-grid">
+        <div class="goals-col">
+          <h3>Rest Day</h3>
+          <label>Calories<input type="number" id="goalRestCal" /></label>
+          <label>Protein g<input type="number" id="goalRestProtein" /></label>
+          <label>Net Carbs g<input type="number" id="goalRestCarb" /></label>
+          <label>Fat g<input type="number" id="goalRestFat" /></label>
+        </div>
+        <div class="goals-col">
+          <h3>Training Day</h3>
+          <label>Calories<input type="number" id="goalTrainCal" /></label>
+          <label>Protein g<input type="number" id="goalTrainProtein" /></label>
+          <label>Net Carbs g<input type="number" id="goalTrainCarb" /></label>
+          <label>Fat g<input type="number" id="goalTrainFat" /></label>
+        </div>
+      </div>
+      <button type="button" class="btn-primary btn-full" id="saveGoalsBtn">Save Goals</button>
+    </details>
+
+    <div class="week-section">
+      <div class="week-section-title">Last 7 Days</div>
+      <div id="weekList"></div>
     </div>
 
     <div class="day-lookup">
@@ -754,6 +964,7 @@ el("userSelect").addEventListener("change", (e) => {
   state.currentUser = e.target.value;
   try { localStorage.setItem("plateFactsUser", state.currentUser); } catch (e) { /* ignore */ }
   loadHistory();
+  loadDayType();
   if (state.activeTab === "stats") refreshStats();
 });
 
@@ -1145,19 +1356,22 @@ async function deleteLogEntry(id, btn, onDone){
 }
 
 loadHistory();
+loadDayType();
 
 // ================== Stats Dashboard ==================
 
 let dayChart = null;
 const dayPicker = el("dayPicker");
+let lastWeekRows = [];
 
-function todayLocalDateStr(){
-  const d = new Date();
+// Local-date string ("YYYY-MM-DD") for a Date, defaulting to right now —
+// uses the device's own clock/timezone, not Supabase's stored UTC value.
+function localDateStr(d = new Date()){
   const tzOffsetMs = d.getTimezoneOffset() * 60000;
   return new Date(d - tzOffsetMs).toISOString().slice(0, 10);
 }
-dayPicker.value = todayLocalDateStr();
-dayPicker.addEventListener("change", () => loadDayLookup());
+dayPicker.value = localDateStr();
+dayPicker.addEventListener("change", () => { loadDayLookup(); renderWeekList(lastWeekRows); });
 
 // Local-time day boundaries as ISO strings, for a "YYYY-MM-DD" string or a Date.
 function dayBoundsIso(dateInput){
@@ -1191,6 +1405,170 @@ async function fetchRowsInRange(startIso, endIso){
   return data || [];
 }
 
+// ---- Training / Rest day (per user, per local date) ----
+function renderDayTypeRow(){
+  el("dayTypeRow").querySelectorAll(".meal-pill").forEach(btn => {
+    const isTraining = btn.dataset.daytype === "training";
+    btn.classList.toggle("active", isTraining === state.isTrainingToday);
+  });
+}
+
+el("dayTypeRow").addEventListener("click", (e) => {
+  const btn = e.target.closest(".meal-pill");
+  if (!btn) return;
+  setDayType(btn.dataset.daytype === "training");
+});
+
+async function loadDayType(){
+  renderDayTypeRow();
+  if (!supabaseClient) return;
+  const { data, error } = await supabaseClient
+    .from("day_type")
+    .select("is_training")
+    .eq("user_name", state.currentUser)
+    .eq("log_date", localDateStr())
+    .maybeSingle();
+  if (error) console.error(error);
+  state.isTrainingToday = data ? !!data.is_training : false;
+  renderDayTypeRow();
+}
+
+async function setDayType(isTraining){
+  state.isTrainingToday = isTraining;
+  renderDayTypeRow();
+  if (state.activeTab === "stats") renderProgressBars();
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient
+    .from("day_type")
+    .upsert(
+      { user_name: state.currentUser, log_date: localDateStr(), is_training: isTraining },
+      { onConflict: "user_name,log_date" }
+    );
+  if (error) { console.error(error); setStatus("Couldn't save day type: " + error.message, true); }
+}
+
+// ---- Goals ----
+state.goals = {
+  rest: { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
+  training: { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
+};
+
+async function loadGoals(){
+  if (!supabaseClient) return;
+  const { data, error } = await supabaseClient
+    .from("user_goals")
+    .select("*")
+    .eq("user_name", state.currentUser);
+  if (error) { console.error(error); return; }
+  const restRow = (data || []).find(g => !g.is_training);
+  const trainRow = (data || []).find(g => g.is_training);
+  state.goals.rest = restRow || { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+  state.goals.training = trainRow || { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+  el("goalRestCal").value = state.goals.rest.calories || "";
+  el("goalRestProtein").value = state.goals.rest.protein_g || "";
+  el("goalRestCarb").value = state.goals.rest.carbs_g || "";
+  el("goalRestFat").value = state.goals.rest.fat_g || "";
+  el("goalTrainCal").value = state.goals.training.calories || "";
+  el("goalTrainProtein").value = state.goals.training.protein_g || "";
+  el("goalTrainCarb").value = state.goals.training.carbs_g || "";
+  el("goalTrainFat").value = state.goals.training.fat_g || "";
+}
+
+el("saveGoalsBtn").addEventListener("click", saveGoals);
+
+async function saveGoals(){
+  if (!supabaseClient) { setStatus("Supabase isn't configured.", true); return; }
+  const rest = {
+    user_name: state.currentUser, is_training: false,
+    calories: Number(el("goalRestCal").value) || 0,
+    protein_g: Number(el("goalRestProtein").value) || 0,
+    carbs_g: Number(el("goalRestCarb").value) || 0,
+    fat_g: Number(el("goalRestFat").value) || 0,
+  };
+  const training = {
+    user_name: state.currentUser, is_training: true,
+    calories: Number(el("goalTrainCal").value) || 0,
+    protein_g: Number(el("goalTrainProtein").value) || 0,
+    carbs_g: Number(el("goalTrainCarb").value) || 0,
+    fat_g: Number(el("goalTrainFat").value) || 0,
+  };
+  el("saveGoalsBtn").disabled = true;
+  const { error } = await supabaseClient.from("user_goals").upsert([rest, training], { onConflict: "user_name,is_training" });
+  el("saveGoalsBtn").disabled = false;
+  if (error) { console.error(error); setStatus("Couldn't save goals: " + error.message, true); return; }
+  state.goals.rest = rest;
+  state.goals.training = training;
+  setStatus("Goals saved.");
+  renderProgressBars();
+}
+
+function renderProgressBars(){
+  el("dayTypeTag").textContent = state.isTrainingToday ? "Training Day" : "Rest Day";
+  const goalSet = state.isTrainingToday ? state.goals.training : state.goals.rest;
+  const t = state.todayTotals || { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+  const rows = [
+    { label: "Calories", consumed: t.calories, goal: goalSet.calories, unit: " kcal", color: "var(--cal)" },
+    { label: "Protein", consumed: t.protein_g, goal: goalSet.protein_g, unit: "g", color: "var(--protein)" },
+    { label: "Net Carbs", consumed: t.carbs_g, goal: goalSet.carbs_g, unit: "g", color: "var(--carb)" },
+    { label: "Fat", consumed: t.fat_g, goal: goalSet.fat_g, unit: "g", color: "var(--fat)" },
+  ];
+  el("progressBars").innerHTML = rows.map(r => {
+    if (!r.goal || r.goal <= 0) {
+      return `
+        <div class="progress-row">
+          <div class="progress-row-top"><span class="p-label">${r.label}</span><span class="p-nums">${round1(r.consumed)}${r.unit}</span></div>
+          <div class="progress-nogoal">No goal set for this day type — set one in Edit Goals below.</div>
+        </div>`;
+    }
+    const pct = Math.max(0, Math.min(100, Math.round((r.consumed / r.goal) * 100)));
+    return `
+      <div class="progress-row">
+        <div class="progress-row-top"><span class="p-label">${r.label}</span><span class="p-nums">${round1(r.consumed)} / ${round1(r.goal)}${r.unit}</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${r.color};"></div></div>
+      </div>`;
+  }).join("");
+}
+
+// ---- Last 7 days list ----
+function renderWeekList(weekRows){
+  const byDate = {};
+  weekRows.forEach(r => {
+    const ds = localDateStr(new Date(r.created_at));
+    if (!byDate[ds]) byDate[ds] = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+    byDate[ds].calories += Number(r.calories) || 0;
+    byDate[ds].protein_g += Number(r.protein_g) || 0;
+    byDate[ds].carbs_g += Number(r.carbs_g) || 0;
+    byDate[ds].fat_g += Number(r.fat_g) || 0;
+  });
+  const todayStr = localDateStr();
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+    days.push(localDateStr(d));
+  }
+  el("weekList").innerHTML = days.map(ds => {
+    const totals = byDate[ds] || { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+    const label = ds === todayStr
+      ? "Today"
+      : new Date(ds + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    const active = ds === dayPicker.value ? " active" : "";
+    return `
+      <button type="button" class="week-day-row${active}" data-date="${ds}">
+        <span class="wd-date">${label}</span>
+        <span class="wd-macros">${Math.round(totals.calories)} kcal · P${Math.round(totals.protein_g)} C${Math.round(totals.carbs_g)} F${Math.round(totals.fat_g)}</span>
+      </button>
+    `;
+  }).join("");
+}
+
+el("weekList").addEventListener("click", (e) => {
+  const btn = e.target.closest(".week-day-row");
+  if (!btn) return;
+  dayPicker.value = btn.dataset.date;
+  loadDayLookup();
+  el("weekList").querySelectorAll(".week-day-row").forEach(b => b.classList.toggle("active", b.dataset.date === btn.dataset.date));
+});
+
 async function refreshStats(){
   if (!supabaseClient) return;
   const today = dayBoundsIso(new Date());
@@ -1201,8 +1579,10 @@ async function refreshStats(){
     fetchRowsInRange(today.startIso, today.endIso),
     fetchRowsInRange(week.startIso, week.endIso),
   ]);
+  lastWeekRows = weekRows;
 
   const t = sumRows(todayRows);
+  state.todayTotals = t;
   el("todayCal").textContent = Math.round(t.calories);
   el("todayMacros").textContent = `P${round1(t.protein_g)} · C${round1(t.carbs_g)} · F${round1(t.fat_g)}`;
 
@@ -1210,6 +1590,9 @@ async function refreshStats(){
   el("weekCal").textContent = Math.round(w.calories);
   el("weekMacros").textContent = `P${round1(w.protein_g)} · C${round1(w.carbs_g)} · F${round1(w.fat_g)}`;
 
+  renderWeekList(weekRows);
+  await loadGoals();
+  renderProgressBars();
   loadDayLookup();
 }
 
