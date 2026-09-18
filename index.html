@@ -1007,22 +1007,109 @@ function resetCapture(){
   el("descriptionInput").value = "";
 }
 
-function handleFile(file){
+// Phone camera photos are several MB, and base64 adds ~33% on top — big enough
+// to stall the upload. Downscale to a long edge of 1024px and re-encode as JPEG,
+// which is plenty of detail for food recognition at a fraction of the size.
+const MAX_EDGE = 1024;
+const JPEG_QUALITY = 0.8;
+
+function downscaleImage(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Couldn't read that image."));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Couldn't decode that image."));
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, MAX_EDGE / Math.max(width, height));
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+        resolve({ dataUrl, base64: dataUrl.split(",")[1], mediaType: "image/jpeg" });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleFile(file){
   if (!file) return;
   state.file = file;
-  state.mediaType = file.type || "image/jpeg";
-  const reader = new FileReader();
-  reader.onload = () => {
-    const dataUrl = reader.result;
-    state.base64 = dataUrl.split(",")[1];
+  setStatus("Preparing photo…");
+  try {
+    const { dataUrl, base64, mediaType } = await downscaleImage(file);
+    state.base64 = base64;
+    state.mediaType = mediaType;
     el("previewImg").src = dataUrl;
     el("captureEmpty").style.display = "none";
     el("previewWrap").style.display = "block";
     el("estimateRow").style.display = "block";
     el("factsPanel").innerHTML = "";
     setStatus("");
-  };
-  reader.readAsDataURL(file);
+    console.log(`Photo prepared: ~${Math.round(base64.length / 1024)} KB encoded`);
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message || "Couldn't process that photo.", true);
+  }
+}
+
+// supabase.functions.invoke has no timeout — if a request stalls, the promise
+// never settles and the UI hangs with no error. Cap it so failures are visible.
+const INVOKE_TIMEOUT_MS = 45000;
+
+// Transient upstream hiccups (Gemini overloaded, Supabase momentarily out of
+// compute, rate limits) usually clear themselves within a few seconds. Retry
+// those automatically instead of making every blip a hard failure.
+const RETRYABLE_STATUSES = [429, 502, 503, 546];
+const RETRY_DELAYS_MS = [1000, 3000];
+
+function isRetryable(err){
+  const msg = String(err && err.message || err);
+  return RETRYABLE_STATUSES.some(s => msg.includes(String(s))) || /WORKER_RESOURCE_LIMIT/i.test(msg);
+}
+
+async function invokeOnce(name, body){
+  const result = await Promise.race([
+    supabaseClient.functions.invoke(name, { body }),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Request timed out after 45s — check your connection and try again.")), INVOKE_TIMEOUT_MS)
+    ),
+  ]);
+  if (result.error) {
+    // supabase-js's default error message is a generic "non-2xx status code" —
+    // the real status/body lives on error.context (the raw Response). Pull it
+    // out so retry logic and error messages can actually distinguish causes.
+    let detail = result.error.message || String(result.error);
+    const ctx = result.error.context;
+    if (ctx && typeof ctx.json === "function") {
+      try {
+        const parsed = await (ctx.clone ? ctx.clone() : ctx).json();
+        detail = `${ctx.status || ""} ${parsed.error || parsed.message || detail}`.trim();
+      } catch (e) { /* body wasn't JSON or already consumed — fall back to default message */ }
+    }
+    throw new Error(detail);
+  }
+  if (result.data && result.data.error) throw new Error(result.data.error);
+  return result.data;
+}
+
+async function invokeFn(name, body, attempt = 0){
+  try {
+    return await invokeOnce(name, body);
+  } catch (err) {
+    if (attempt < RETRY_DELAYS_MS.length && isRetryable(err)) {
+      setStatus(`Temporary hiccup — retrying… (${attempt + 1}/${RETRY_DELAYS_MS.length})`);
+      await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+      return invokeFn(name, body, attempt + 1);
+    }
+    throw err;
+  }
 }
 
 // ---- Estimate via Gemini vision (proxied through the Supabase Edge Function) ----
@@ -1035,18 +1122,21 @@ async function estimateMacros(){
 
   try {
     if (!supabaseClient) throw new Error("Supabase isn't configured.");
-    const { data, error } = await supabaseClient.functions.invoke("estimate-macros", {
-      body: { image_base64: state.base64, media_type: state.mediaType }
+    const data = await invokeFn("estimate-macros", {
+      image_base64: state.base64, media_type: state.mediaType
     });
-    if (error) throw error;
-    if (data && data.error) throw new Error(data.error);
     const parsed = data.estimate;
     state.estimate = parsed;
     renderFacts(parsed);
     setStatus("Estimate ready — edit items, add anything it missed, then save.");
   } catch (err) {
     console.error(err);
-    setStatus("Couldn't estimate that one — add items manually below.", true);
+    const msg = String(err && err.message || err);
+    if (msg.includes("429") || /rate|quota/i.test(msg)) {
+      setStatus("Gemini rate limit hit — wait a minute and try again.", true);
+    } else {
+      setStatus("Couldn't estimate that one — add items manually below.", true);
+    }
     renderFacts({
       food_name: "New Plate",
       confidence_note: "Manual entry — estimate failed.",
@@ -1068,11 +1158,7 @@ async function estimateFromDescription(){
 
   try {
     if (!supabaseClient) throw new Error("Supabase isn't configured.");
-    const { data, error } = await supabaseClient.functions.invoke("estimate-macros", {
-      body: { description }
-    });
-    if (error) throw error;
-    if (data && data.error) throw new Error(data.error);
+    const data = await invokeFn("estimate-macros", { description });
     // This estimate isn't tied to a photo — clear any in-progress capture state.
     state.file = null; state.base64 = null; state.mediaType = null;
     el("captureEmpty").style.display = "flex";
@@ -1218,11 +1304,7 @@ async function lookupItemMacros(item, btn){
   btn.textContent = "…";
   setStatus(`Looking up ${name}…`);
   try {
-    const { data, error } = await supabaseClient.functions.invoke("lookup-item", {
-      body: { name, quantity: item.quantity || "1 serving" }
-    });
-    if (error) throw error;
-    if (data && data.error) throw new Error(data.error);
+    const data = await invokeFn("lookup-item", { name, quantity: item.quantity || "1 serving" });
     const est = data.estimate;
     item.calories = num(est.calories);
     item.protein_g = num(est.protein_g);
