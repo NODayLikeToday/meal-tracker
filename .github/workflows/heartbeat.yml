@@ -11,4 +11,4 @@ jobs:
     steps:
       - name: Call heartbeat function
         run: |
-          curl -sf -X POST "https://xxx.supabase.co/functions/v1/heartbeat"
+          curl -sf -X POST "https://ljyyfbhsybxblqgfxhos.supabase.co/functions/v1/heartbeat"
